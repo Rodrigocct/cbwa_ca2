@@ -3,6 +3,9 @@ FROM node:19-alpine as build
 WORKDIR /app
 RUN wget https://github.com/rodrigocct/mobdev_ca3/archive/main.tar.gz && tar xf main.tar.gz && rm main.tar.gz
  
+ # Create a new user to secure running commands
+RUN adduser -D static
+
 #dining the working directory
 
 WORKDIR /app/mobdev_ca3-main/
