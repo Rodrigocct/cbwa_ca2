@@ -1,117 +1,107 @@
-# docker-static-website
-Cloud-based Web Application
-CA1: Dockerfile Composition
+##How to build a docker image to use as a container for a Web app
+## Step 1
+I Have created a new github repository called cbwa_ca2 as required 
 
-By following these simple steps i managed to create the minimalistic Docker container locally hosted and show a simple page hosted on github repository
-as it was required for this assignment
+##Create a Dockerfile
 
-## Steps to be follow
+here follow the script for the docker file
 
-it can be seen on the docker file that it has been utized the latest version of alpine wich is 3.16.2 and latest verision of busybox 1.35.0
-
-```sh
-FROM alpine:3.16.2 AS builder
-
-RUN apk add gcc musl-dev make perl
-
-```
+##Here we are saying Docker to use node19 alpine from dockerhub to use as a base image
+ which will allow us to run the commands related to npm. 
 
 
-# Download busybox sources
+FROM node:19-alpine as build
 
-in this part busybox is downloaded, uncompressed and moved to busybox
+##creating a work directory app and copying package and package-lock.json to app folder.
 
-```sh
+WORKDIR /app
 
-RUN wget https://busybox.net/downloads/busybox-1.35.0.tar.bz2 \
-  && tar xf busybox-1.35.0.tar.bz2 \
-  && mv /busybox-1.35.0 /busybox
+RUN wget https://github.com/josephantonyc/mobdev_ca3/archive/main.tar.gz && tar xf main.tar.gz && rm main.tar.gz
+ 
 
-```
+WORKDIR /app/mobdev_ca3-main/
 
-# A new user is created to basically protect the running commands
+##Installing ionic globally
 
-```sh
+RUN npm install -g ionic
+RUN npm install
 
-RUN adduser -D static
-
-```
+## creating a www folder of our project,which we will be using to deploy to nginx.
 
 
-#Get the content of webdevca1.1 from GitHub
+RUN npm run-script build --prod
 
-to get the content it was provided the github repository link
+##telling Docker to use the nginx from dockerhub.
 
-```sh
+FROM nginx:alpine
 
-RUN wget https://github.com/Rodrigocct/webdevca1.1/archive/main.tar.gz \
-  && tar xf main.tar.gz \
-  && rm main.tar.gz \
-  && mv /webdevca1.1-main /home/static
-```
+##deleting anything on /usr/share/nginx/html/*
 
-# Change working directory
+RUN rm -rf /usr/share/nginx/html/*
 
+##coping files from www folder to html folder
 
+COPY --from=build /app/mobdev_ca3-main/www /usr/share/nginx/html/
 
-```sh
+##the port number we are using in this case is 80
 
-WORKDIR /busybox
+EXPOSE 80
 
-```
+## After getting clear what we have in the docker file script lets run mobdev_ca3 on this docker container
 
-# Install a custom version of BusyBox
-COPY .config .
-RUN make && make install
+#Build the docker container
 
-# Switch to the scratch image
-FROM scratch
+1 - in the terminal run: "docker build -t webapp ."
 
-EXPOSE 8080
+#Run docker image
 
-# Copy user and BusyBox
-COPY --from=builder /etc/passwd /etc/passwd
-COPY --from=builder /busybox/_install/bin/busybox /
+2 - now run: "docker run -it --rm -p 80:80 myapp" 
 
-# Copy the content of webdevca1.1 to the scratch image
-COPY --from=builder /home/static /home/static
-
-# Switch to our non-root user and their work directory
-USER static
-
-WORKDIR /home/static/webdevca1.1-main
-
-# Uploads a blank default httpd.conf
-# This is only needed in order to set the `-c` argument in this base file
-# and save the developer the need to override the CMD line in case they ever
-# want to use a httpd.conf
-
-# httpd.conf
-COPY httpd.conf .
+now we should be able to see our webapp working
 
 
-# Issuing commands to run when container is created
-CMD ["/busybox", "httpd", "-f", "-v", "-p", "8080", "-c", "httpd.conf"]
+####### Hosting service providers recommended for your docker container #####
 
-# After setting all
+2.1.5	what to look for in a good hosting:
+-  Monthly file transfer
+- Storage space
+- Operating system
+-  Server location
+- Price
+- Services offered
+After doing big research I end up choosing these 2 options that I can recommend to host docker containers:
+2.2.5	Amazon Elastic Container Service (Amazon ECS)
+Amazon Elastic Container Service (Amazon ECS) is a highly scalable container service with docker support. It is used to containerize your applications on AWS. It provides windows compatibility and supports the management of windows containers. (Geekflare, 2019) (Google Cloud, 2022)
+Features
+•	Provides security by using Amazon IAM and Amazon VPC
+•	Runs Amazon EC2 spot instances for optimizing cost
+•	It can easily containerize machine learning models for training and inference.
+•	Easily integrated with AWS services
 
-by running the command below on the cmd comand prompt it is possible to Build the image:
+2.3.5	Google Cloud Run
+It is one of the fastest growing platforms geographically speaking and also in terms of technology. He has developed “Kubernetes” a popular container orchestration tool that has been originally developed by google and which of course supports Docker.
+It abstracts all the complexities involved in infrastructure management, and you can just focus on building your application. Using Cloud Run, you can deploy containers on production within seconds. You can also scale up or down your container infrastructure without any downtime. (Google Cloud, 2022)
+2.4.5	Here are some of the advantages:
+- New customers get $300 in free credits to spend on Cloud Run. All customers get 2 million requests free per month, not charged against your credits.
+- Use the programming language of your choice, any language or operating system libraries, or even bring your own binaries.
+ - Pay‐per‐use
+- Only pay when your code is running, billed to the nearest 100 milliseconds.
 
-```sh
-docker build -t my-ca1-webdev .
-```
-before running the command line make sure you are in the correct directory. 
-To access the directory where your file is located you can use cd followed by the address where your files are located
 
-# Run the image:
 
-it can be done by running the next command line and providing the port number in this case is 8080
 
-```sh
-docker run -it --rm -p 8080:8080 my-ca1-webdev
-```
-# to check if everyting went throug:
 
-Browse to `http://localhost:8080`.
+###	References ###
+
+in this proyect i have mainly used classes slides and the previous ca files to edit the commands lines
+
+https://github.com/Rodrigocct/cbwa_ca1
+
+
+### cloud providers references ###
+
+Geekflare, 2019. 10 Best Docker Hosting Platforms for your Containers. [Online] Available at: https://geekflare.com/docker-hosting-platforms/ [Accessed 23 November 2022].
+GitHub Docs, 2022. Quickstart for GitHub Actions - GitHub Docs. [Online] Available at: https://docs.github.com/en/actions/quickstart [Accessed 23 November 2022].
+Google Cloud, 2022. Cloud Run: Container to production in seconds  |  Google Cloud. [Online] Available at: https://cloud.google.com [Accessed 23 November 2022].
 
 
