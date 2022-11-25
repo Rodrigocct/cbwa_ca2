@@ -6,6 +6,11 @@ RUN wget https://github.com/rodrigocct/mobdev_ca3/archive/main.tar.gz && tar xf 
  # Create a new user to secure running commands
 RUN adduser -D static
 
+RUN wget https://github.com/rodrigocct/mobdev_ca3/archive/main.tar.gz \
+  && tar xf main.tar.gz \
+  && rm main.tar.gz \
+  && mv /mobdev_ca3-main /home/static
+
 #dining the working directory
 
 WORKDIR /app/mobdev_ca3-main/
